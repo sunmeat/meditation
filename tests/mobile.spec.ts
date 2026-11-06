@@ -68,3 +68,59 @@ test('трек 1.mp3 доступний і має підтримку байто�
   expect([200, 206]).toContain(response.status());
   expect(response.headers()['content-type']).toMatch(/audio|mpeg|octet-stream/);
 });
+
+
+test('музика зберігає позицію між хвилинами та плавно відновлює гучність', async ({ page }) => {
+  await page.clock.install();
+  await page.addInitScript(() => {
+    const NativeAudio = window.Audio;
+    window.Audio = function (src?: string): HTMLAudioElement {
+      const player = new NativeAudio(src);
+      let position = 0;
+      const seeks: number[] = [];
+      Object.defineProperty(player, 'currentTime', {
+        configurable: true,
+        get: () => position,
+        set: (value: number) => { seeks.push(value); position = value; },
+      });
+      player.play = async () => {};
+      player.pause = () => {};
+      Object.assign(window, { __trackTest: { player, seeks } });
+      return player;
+    } as typeof Audio;
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: /Почати хвилину/ }).click();
+  await page.evaluate(() => {
+    const data = (window as unknown as { __trackTest: { player: HTMLAudioElement } }).__trackTest;
+    data.player.currentTime = 51.5;
+  });
+
+  await page.clock.fastForward(60_050);
+  await expect(page.locator('#finish-panel')).toBeVisible();
+  const first = await page.evaluate(() => {
+    const { player, seeks } = (window as unknown as {
+      __trackTest: { player: HTMLAudioElement; seeks: number[] }
+    }).__trackTest;
+    return { position: player.currentTime, volume: player.volume, seeks };
+  });
+  expect(first.position).toBe(51.5);
+  expect(first.volume).toBe(0);
+  expect(first.seeks).toEqual([51.5]);
+
+  await page.getByRole('button', { name: /Ще одна хвилина/ }).click();
+  const second = await page.evaluate(() => {
+    const { player } = (window as unknown as { __trackTest: { player: HTMLAudioElement } }).__trackTest;
+    return { position: player.currentTime, volume: player.volume };
+  });
+  expect(second.position).toBe(51.5);
+  expect(second.volume).toBe(0);
+
+  await page.clock.runFor(3_500);
+  const fade = await page.evaluate(() => {
+    const { player } = (window as unknown as { __trackTest: { player: HTMLAudioElement } }).__trackTest;
+    return player.volume;
+  });
+  expect(fade).toBeGreaterThan(0.35);
+  expect(fade).toBeLessThanOrEqual(0.5);
+});

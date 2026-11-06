@@ -51,6 +51,7 @@ let phase: Phase = 'ready';
 let startedAt = 0;
 let elapsedBeforePause = 0;
 let currentElapsedMs = 0;
+let fadeInFromElapsedMs = 0;
 let frameId = 0;
 let lastMessageIndex = -1;
 let soundEnabled = true;
@@ -85,15 +86,15 @@ function playMusic(): void {
   });
 }
 
-function resetMusic(): void {
+// Pause without seeking: the next one-minute meditation keeps the same position.
+function pauseMusic(): void {
   soundtrack.pause();
   soundtrack.volume = 0;
-  try { soundtrack.currentTime = 0; } catch { /* Metadata may not be loaded yet. */ }
 }
 
 function updateVolume(): void {
   if (!soundEnabled) return;
-  const fadeIn = Math.min(1, currentElapsedMs / FADE_IN_MS);
+  const fadeIn = Math.min(1, Math.max(0, (currentElapsedMs - fadeInFromElapsedMs) / FADE_IN_MS));
   const fadeOut = Math.min(1, Math.max(0, (DURATION_MS - currentElapsedMs) / FADE_OUT_MS));
   soundtrack.volume = Math.max(0, Math.min(1, MUSIC_VOLUME * fadeIn * fadeOut));
 }
@@ -109,9 +110,10 @@ musicButton.addEventListener('click', () => {
   soundEnabled = !soundEnabled;
   renderMusicButton();
   if (!soundEnabled) {
-    soundtrack.pause();
+    pauseMusic();
   } else if (phase === 'running') {
-    updateVolume();
+    fadeInFromElapsedMs = currentElapsedMs;
+    soundtrack.volume = 0;
     playMusic();
   }
 });
@@ -213,11 +215,13 @@ function tick(now: number): void {
 
 function start(): void {
   cancelAnimationFrame(frameId);
-  resetMusic();
+  pauseMusic();
+  // Do not rewind the MP3 here. "Ще одна хвилина" continues the same track.
   soundEnabled = !audioUnavailable;
   renderMusicButton();
   elapsedBeforePause = 0;
   currentElapsedMs = 0;
+  fadeInFromElapsedMs = 0;
   lastMessageIndex = -1;
   startedAt = performance.now();
 
@@ -243,7 +247,7 @@ function pause(): void {
   elapsedBeforePause = Math.min(DURATION_MS, elapsedBeforePause + performance.now() - startedAt);
   updateVisuals(elapsedBeforePause);
   cancelAnimationFrame(frameId);
-  soundtrack.pause();
+  pauseMusic();
   switchPhase('paused');
   pauseButton.textContent = 'Продовжити';
 }
@@ -251,6 +255,8 @@ function pause(): void {
 function resume(): void {
   if (phase !== 'paused') return;
   startedAt = performance.now();
+  fadeInFromElapsedMs = elapsedBeforePause;
+  soundtrack.volume = 0;
   switchPhase('running');
   pauseButton.textContent = 'Призупинити';
   frameId = requestAnimationFrame(tick);
@@ -260,7 +266,8 @@ function resume(): void {
 function finish(): void {
   cancelAnimationFrame(frameId);
   updateVisuals(DURATION_MS);
-  resetMusic();
+  // After the 8-second fade-out, freeze the long track at this position.
+  pauseMusic();
   thought.hidden = true;
   caption.hidden = false;
   caption.textContent = 'Ця хвилина належала вам.';
@@ -270,7 +277,7 @@ function finish(): void {
 
 function reset(clearText = false): void {
   cancelAnimationFrame(frameId);
-  resetMusic();
+  pauseMusic();
   elapsedBeforePause = 0;
   currentElapsedMs = 0;
   lastMessageIndex = -1;
