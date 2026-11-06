@@ -1,4 +1,5 @@
 import './styles.css';
+import { inject } from '@vercel/analytics';
 
 type Phase = 'ready' | 'running' | 'paused' | 'complete';
 
@@ -7,6 +8,7 @@ const RING_CIRCUMFERENCE = Math.PI * 40;
 const MUSIC_VOLUME = 0.5;
 const FADE_IN_MS = 3200;
 const FADE_OUT_MS = 8000;
+const BUTTON_FADE_MS = 2000;
 
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id);
@@ -52,6 +54,10 @@ let startedAt = 0;
 let elapsedBeforePause = 0;
 let currentElapsedMs = 0;
 let fadeInFromElapsedMs = 0;
+let fadeInStartVolume = 0;
+let fadeFrameId = 0;
+let fadeStopTimer: ReturnType<typeof setTimeout> | null = null;
+let fadeToken = 0;
 let frameId = 0;
 let lastMessageIndex = -1;
 let soundEnabled = true;
@@ -86,17 +92,59 @@ function playMusic(): void {
   });
 }
 
-// Pause without seeking: the next one-minute meditation keeps the same position.
-function pauseMusic(): void {
+// A fading track must not restart or seek when another session begins.
+function cancelMusicFade(): void {
+  fadeToken += 1;
+  cancelAnimationFrame(fadeFrameId);
+  fadeFrameId = 0;
+  if (fadeStopTimer !== null) {
+    clearTimeout(fadeStopTimer);
+    fadeStopTimer = null;
+  }
+}
+
+function pauseMusicImmediately(): void {
+  cancelMusicFade();
   soundtrack.pause();
   soundtrack.volume = 0;
+}
+
+function fadeOutMusic(): void {
+  cancelMusicFade();
+  if (soundtrack.paused || soundtrack.volume <= 0) {
+    pauseMusicImmediately();
+    return;
+  }
+  const token = fadeToken;
+  const initialVolume = soundtrack.volume;
+  const started = performance.now();
+
+  const animate = (now: number): void => {
+    if (token !== fadeToken) return;
+    const progress = Math.min(1, Math.max(0, (now - started) / BUTTON_FADE_MS));
+    // Ease smoothly to silence, without a click at the end.
+    const eased = progress * progress * (3 - 2 * progress);
+    soundtrack.volume = Math.max(0, initialVolume * (1 - eased));
+    if (progress >= 1) {
+      pauseMusicImmediately();
+    } else {
+      fadeFrameId = requestAnimationFrame(animate);
+    }
+  };
+
+  fadeFrameId = requestAnimationFrame(animate);
+  // Browsers throttle animation frames in background tabs. This is a fallback.
+  fadeStopTimer = setTimeout(() => {
+    if (token === fadeToken) pauseMusicImmediately();
+  }, BUTTON_FADE_MS + 80);
 }
 
 function updateVolume(): void {
   if (!soundEnabled) return;
   const fadeIn = Math.min(1, Math.max(0, (currentElapsedMs - fadeInFromElapsedMs) / FADE_IN_MS));
   const fadeOut = Math.min(1, Math.max(0, (DURATION_MS - currentElapsedMs) / FADE_OUT_MS));
-  soundtrack.volume = Math.max(0, Math.min(1, MUSIC_VOLUME * fadeIn * fadeOut));
+  const audibleVolume = fadeInStartVolume + (MUSIC_VOLUME - fadeInStartVolume) * fadeIn;
+  soundtrack.volume = Math.max(0, Math.min(1, audibleVolume * fadeOut));
 }
 
 soundtrack.addEventListener('error', () => {
@@ -110,9 +158,10 @@ musicButton.addEventListener('click', () => {
   soundEnabled = !soundEnabled;
   renderMusicButton();
   if (!soundEnabled) {
-    pauseMusic();
+    pauseMusicImmediately();
   } else if (phase === 'running') {
     fadeInFromElapsedMs = currentElapsedMs;
+    fadeInStartVolume = 0;
     soundtrack.volume = 0;
     playMusic();
   }
@@ -215,13 +264,14 @@ function tick(now: number): void {
 
 function start(): void {
   cancelAnimationFrame(frameId);
-  pauseMusic();
+  pauseMusicImmediately();
   // Do not rewind the MP3 here. "Ще одна хвилина" continues the same track.
   soundEnabled = !audioUnavailable;
   renderMusicButton();
   elapsedBeforePause = 0;
   currentElapsedMs = 0;
   fadeInFromElapsedMs = 0;
+  fadeInStartVolume = 0;
   lastMessageIndex = -1;
   startedAt = performance.now();
 
@@ -247,7 +297,7 @@ function pause(): void {
   elapsedBeforePause = Math.min(DURATION_MS, elapsedBeforePause + performance.now() - startedAt);
   updateVisuals(elapsedBeforePause);
   cancelAnimationFrame(frameId);
-  pauseMusic();
+  fadeOutMusic();
   switchPhase('paused');
   pauseButton.textContent = 'Продовжити';
 }
@@ -255,8 +305,10 @@ function pause(): void {
 function resume(): void {
   if (phase !== 'paused') return;
   startedAt = performance.now();
+  // A quick resume cancels any unfinished fade-out and gently ramps back up.
+  cancelMusicFade();
   fadeInFromElapsedMs = elapsedBeforePause;
-  soundtrack.volume = 0;
+  fadeInStartVolume = soundtrack.volume;
   switchPhase('running');
   pauseButton.textContent = 'Призупинити';
   frameId = requestAnimationFrame(tick);
@@ -266,8 +318,8 @@ function resume(): void {
 function finish(): void {
   cancelAnimationFrame(frameId);
   updateVisuals(DURATION_MS);
-  // After the 8-second fade-out, freeze the long track at this position.
-  pauseMusic();
+  // The regular last-eight-seconds fade has already reached zero.
+  pauseMusicImmediately();
   thought.hidden = true;
   caption.hidden = false;
   caption.textContent = 'Ця хвилина належала вам.';
@@ -277,7 +329,8 @@ function finish(): void {
 
 function reset(clearText = false): void {
   cancelAnimationFrame(frameId);
-  pauseMusic();
+  // Leave the UI immediately, but let the audio fade for two seconds.
+  fadeOutMusic();
   elapsedBeforePause = 0;
   currentElapsedMs = 0;
   lastMessageIndex = -1;
@@ -311,7 +364,11 @@ document.addEventListener('keydown', (event) => {
 // If someone checks an air-raid alert, switches apps or locks the phone,
 // the exercise and the music stop together until the person resumes.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) pause();
+  if (document.hidden) {
+    if (phase === 'running') pause();
+    // If someone switches away to check an alert, silence takes priority.
+    pauseMusicImmediately();
+  }
 });
 
 // Deterministic star layout prevents a jump on every rerender.
@@ -341,6 +398,10 @@ for (let i = 0; i < 136; i++) {
   fragment.appendChild(star);
 }
 stars.appendChild(fragment);
+
+// Vercel Web Analytics counts anonymous page views. No user-entered thoughts or
+// custom events are passed to Analytics.
+if (import.meta.env.PROD) inject();
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

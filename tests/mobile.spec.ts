@@ -124,3 +124,92 @@ test('музика зберігає позицію між хвилинами т�
   expect(fade).toBeGreaterThan(0.35);
   expect(fade).toBeLessThanOrEqual(0.5);
 });
+
+test('призупинення та завершення плавно зменшують гучність, зберігаючи позицію', async ({ page }) => {
+  await page.clock.install();
+  await page.addInitScript(() => {
+    const NativeAudio = window.Audio;
+    window.Audio = function (src?: string): HTMLAudioElement {
+      const player = new NativeAudio(src);
+      let position = 38.25;
+      let isPaused = true;
+      Object.defineProperty(player, 'currentTime', {
+        configurable: true,
+        get: () => position,
+        set: (value: number) => { position = value; },
+      });
+      Object.defineProperty(player, 'paused', { configurable: true, get: () => isPaused });
+      player.play = async () => { isPaused = false; };
+      player.pause = () => { isPaused = true; };
+      Object.assign(window, { __trackTest: { player } });
+      return player;
+    } as typeof Audio;
+  });
+
+  const audio = () => page.evaluate(() => {
+    const { player } = (window as unknown as { __trackTest: { player: HTMLAudioElement } }).__trackTest;
+    return { paused: player.paused, position: player.currentTime, volume: player.volume };
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: /Почати хвилину/ }).click();
+  await page.clock.runFor(5_000);
+  const beforePause = await audio();
+  expect(beforePause.paused).toBe(false);
+  expect(beforePause.volume).toBeGreaterThan(0.4);
+
+  await page.getByRole('button', { name: /Призупинити/ }).click();
+  await expect(page.getByRole('button', { name: /Продовжити/ })).toBeVisible();
+  const immediately = await audio();
+  expect(immediately.paused).toBe(false);
+  expect(immediately.volume).toBeGreaterThan(0.35);
+
+  await page.clock.runFor(650);
+  const duringFade = await audio();
+  expect(duringFade.volume).toBeGreaterThan(0);
+  expect(duringFade.volume).toBeLessThan(immediately.volume);
+
+  // Resume before the 2-second fade finishes: no obsolete callback may stop the audio.
+  await page.getByRole('button', { name: /Продовжити/ }).click();
+  await page.clock.runFor(2_300);
+  const afterResume = await audio();
+  expect(afterResume.paused).toBe(false);
+  expect(afterResume.position).toBe(38.25);
+  expect(afterResume.volume).toBeGreaterThan(0.25);
+
+  await page.getByRole('button', { name: /Завершити зараз/ }).click();
+  await expect(page.locator('#entry-panel')).toBeVisible();
+  const afterStopClick = await audio();
+  expect(afterStopClick.paused).toBe(false);
+  expect(afterStopClick.volume).toBeGreaterThan(0.2);
+  await page.clock.runFor(1050);
+  const nearEnd = await audio();
+  expect(nearEnd.volume).toBeGreaterThan(0);
+  expect(nearEnd.volume).toBeLessThan(afterStopClick.volume);
+  await page.clock.runFor(1150);
+  const ended = await audio();
+  expect(ended.paused).toBe(true);
+  expect(ended.volume).toBe(0);
+  expect(ended.position).toBe(38.25);
+
+  await page.getByRole('button', { name: /Почати хвилину/ }).click();
+  await page.clock.runFor(3500);
+  const restarted = await audio();
+  expect(restarted.paused).toBe(false);
+  expect(restarted.position).toBe(38.25);
+  expect(restarted.volume).toBeGreaterThan(0.4);
+});
+
+test('український опис при поширенні та відсутність думок у метаданих', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Тихо поруч/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://tyho.vercel.app/');
+  const meta = await page.locator('meta[property="og:description"]').getAttribute('content');
+  expect(meta?.length).toBeGreaterThan(250);
+  expect(meta).toContain('війни в Україні');
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary');
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /безкоштовний/);
+  await page.locator('#thought-input').fill('Тестова приватна думка');
+  const content = await page.locator('head').innerText();
+  expect(content).not.toContain('Тестова приватна думка');
+});
