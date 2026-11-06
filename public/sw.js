@@ -31,6 +31,19 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   event.respondWith((async () => {
+    // Always check for a new page when online. Use the cached app when offline.
+    if (request.mode === 'navigate') {
+      try {
+        const response = await fetch(request);
+        if (response.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put('/index.html', response.clone());
+        }
+        return response;
+      } catch {
+        return (await caches.match('/index.html')) || Response.error();
+      }
+    }
     const cached = await caches.match(request);
     if (cached) return cached;
     try {
@@ -41,10 +54,6 @@ self.addEventListener('fetch', (event) => {
       }
       return response;
     } catch {
-      if (request.mode === 'navigate') {
-        const fallback = await caches.match('/index.html');
-        if (fallback) return fallback;
-      }
       return Response.error();
     }
   })());
