@@ -33,10 +33,6 @@
               <span class="control-button__symbol" aria-hidden="true">Аа</span>
               <span class="control-button__label">Більший текст</span>
             </button>
-            <button id="motion-toggle" class="control-button" type="button" aria-pressed="false" title="Зменшити рух">
-              <span class="control-button__symbol" aria-hidden="true">◌</span>
-              <span class="control-button__label">Менше руху</span>
-            </button>
           </div>
         </header>
 
@@ -48,7 +44,6 @@
 
         <main id="main" class="main-content">
           <section class="intro" aria-labelledby="page-title">
-            <div class="eyebrow"><span class="eyebrow__light" aria-hidden="true"></span> ПРОСТІР ДЛЯ ОДНІЄЇ ХВИЛИНИ</div>
             <h1 id="page-title">Коли навколо гучно,<br /><span>знайдіть місце для тиші.</span></h1>
             <p class="intro__subtitle">Не потрібно вдавати, що все добре. Тут можна ненадовго відкласти важку думку та відчути трохи опори.</p>
           </section>
@@ -77,11 +72,28 @@
               <p class="field-hint" id="thought-hint">Напишіть її для себе або залиште поле порожнім. Не потрібно підбирати правильні слова.</p>
               <textarea id="thought-input" name="thought" rows="2" maxlength="160" aria-describedby="thought-hint" placeholder="Мене турбує…"></textarea>
               <div class="suggestions" aria-label="Або оберіть близьку думку">
-                <button type="button" class="suggestion" data-thought="Мені страшно">Мені страшно</button>
-                <button type="button" class="suggestion" data-thought="Невизначеність дуже виснажує">Виснажує невизначеність</button>
-                <button type="button" class="suggestion" data-thought="Складно знайти сили на новий день">Важко знайти сили</button>
+                <button type="button" class="suggestion" data-thought="Мені страшно" aria-pressed="false">Мені страшно</button>
+                <button type="button" class="suggestion" data-thought="Виснажує невизначеність" aria-pressed="false">Виснажує невизначеність</button>
+                <button type="button" class="suggestion" data-thought="Важко знайти сили" aria-pressed="false">Важко знайти сили</button>
+                <button type="button" class="suggestion" data-thought="Тривожно за близьких" aria-pressed="false">Тривожно за близьких</button>
+                <button type="button" class="suggestion" data-thought="Не можу заснути" aria-pressed="false">Не можу заснути</button>
+                <button type="button" class="suggestion" data-thought="Втома від новин" aria-pressed="false">Втома від новин</button>
               </div>
+              <div id="more-suggestions" class="suggestions suggestions--more" aria-label="Більше варіантів думок" hidden>
+                <button type="button" class="suggestion" data-thought="Боюся за свій дім" aria-pressed="false">Боюся за свій дім</button>
+                <button type="button" class="suggestion" data-thought="Виснажують відключення світла" aria-pressed="false">Виснажують відключення світла</button>
+                <button type="button" class="suggestion" data-thought="Непокоюся через гроші" aria-pressed="false">Непокоюся через гроші</button>
+                <button type="button" class="suggestion" data-thought="Важко зосередитися" aria-pressed="false">Важко зосередитися</button>
+                <button type="button" class="suggestion" data-thought="Почуваюся самотньо" aria-pressed="false">Почуваюся самотньо</button>
+                <button type="button" class="suggestion" data-thought="Лякають гучні звуки" aria-pressed="false">Лякають гучні звуки</button>
+                <button type="button" class="suggestion" data-thought="Важко жити без звичного спокою" aria-pressed="false">Бракує спокою</button>
+                <button type="button" class="suggestion" data-thought="Я дуже сумую за рідними" aria-pressed="false">Сумую за рідними</button>
+                <button type="button" class="suggestion" data-thought="Не знаю, що буде далі" aria-pressed="false">Не знаю, що далі</button>
+              </div>
+              <button id="show-more-thoughts" class="more-thoughts" type="button" aria-expanded="false" aria-controls="more-suggestions">Ще 9 варіантів <span aria-hidden="true">⌄</span></button>
+
               <button id="start-button" type="button" class="primary-button">Почати хвилину <span aria-hidden="true">↗</span></button>
+              <p class="music-notice">♫ Після початку хвилини тихо заграє музика. Її можна вимкнути будь-коли.</p>
               <p class="privacy-line"><span aria-hidden="true">◇</span> Думка залишається лише у вашій вкладці. Ми її нікуди не надсилаємо.</p>
             </div>
 
@@ -100,6 +112,7 @@
                 <button id="pause-button" type="button" class="secondary-button">Призупинити</button>
                 <button id="stop-button" type="button" class="quiet-button">Завершити зараз</button>
               </div>
+              <button id="session-music-toggle" type="button" class="session-music-toggle" aria-pressed="true">♫ Вимкнути музику</button>
             </div>
 
             <div id="finish-panel" class="finish-panel" hidden>
@@ -113,14 +126,13 @@
             </div>
           </section>
 
-          <p class="bottom-note"><span aria-hidden="true">✦</span> Тут не потрібно бути сильними щосекунди.</p>
+          <p class="bottom-note"><span aria-hidden="true">✦</span> Не потрібно бути сильними щосекунди.</p>
         </main>
 
         <footer class="site-footer">
           <div class="site-footer__brand"><span class="mini-star" aria-hidden="true">✳</span> Тихо поруч <span class="site-footer__separator" aria-hidden="true">·</span> Зроблено з турботою про людей в Україні.</div>
           <div class="site-footer__links">
             <a href="https://sunmeat.dev/" target="_blank" rel="noopener noreferrer">sunmeat.dev ↗</a>
-            <a href="https://github.com/sunmeat/meditation" target="_blank" rel="noopener noreferrer">Відкритий код ↗</a>
             <a href="https://www.who.int/publications/i/item/9789240003927/" target="_blank" rel="noopener noreferrer">Про самодопомогу ↗</a>
           </div>
           <p class="site-footer__disclaimer">Це невелика вправа для самопідтримки, а не заміна професійної допомоги чи правил безпеки.</p>

@@ -1,5 +1,5 @@
 /* Lightweight offline-first cache for the public, static app. No user text is stored. */
-const CACHE_NAME = 'tykho-poruch-v1';
+const CACHE_NAME = 'tykho-poruch-v2';
 const SHELL = ['/', '/index.html', '/icon.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -30,6 +30,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // The audio element may request partial byte ranges (HTTP 206).
+  // CacheStorage cannot store 206 responses, so pass them through directly.
+  if (url.pathname === '/1.mp3' && request.headers.has('range')) {
+    event.respondWith(fetch(request));
+    return;
+  }
   event.respondWith((async () => {
     // Always check for a new page when online. Use the cached app when offline.
     if (request.mode === 'navigate') {
