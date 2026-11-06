@@ -15,3 +15,12 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:mobile
+      - name: Зберегти знімки в разі помилки
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-test-report
+          path: test-results/
+          retention-days: 7
