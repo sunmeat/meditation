@@ -1,0 +1,14 @@
+{
+  "name": "Тихо поруч · Одна хвилина опори",
+  "short_name": "Тихо поруч",
+  "description": "Одна хвилина опори, коли навколо неспокійно.",
+  "lang": "uk",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080f1a",
+  "theme_color": "#080f1a",
+  "icons": [
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "tykho-poruch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Україномовна хвилина опори під час складних часів",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "check": "tsc --noEmit",
+    "build": "npm run check && vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

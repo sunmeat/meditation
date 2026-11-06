@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#080f1a" />
+    <meta name="description" content="Тихо поруч — безкоштовна хвилина опори для всіх, кому зараз непросто. Українською, без реєстрації та без збереження ваших думок." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Тихо поруч · Одна хвилина опори" />
+    <meta property="og:description" content="Коли навколо гучно, знайдіть місце для тиші. 60 секунд, щоб побути з собою." />
+    <meta property="og:locale" content="uk_UA" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Тихо поруч · Одна хвилина опори</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="background" aria-hidden="true">
+        <div class="background__aurora"></div>
+        <div class="background__halo"></div>
+        <div class="background__grain"></div>
+      </div>
+      <a class="skip-link" href="#main">Перейти до вправи</a>
+      <div class="page-shell">
+        <header class="site-header">
+          <a class="brand" href="/" aria-label="Тихо поруч, на початок">
+            <span class="brand__symbol" aria-hidden="true">✳</span>
+            <span class="brand__name">тихо<span class="brand__dot">.</span>поруч</span>
+          </a>
+          <div class="header-actions" aria-label="Налаштування вигляду">
+            <button id="font-toggle" class="control-button" type="button" aria-pressed="false" title="Збільшити текст">
+              <span class="control-button__symbol" aria-hidden="true">Аа</span>
+              <span class="control-button__label">Більший текст</span>
+            </button>
+            <button id="motion-toggle" class="control-button" type="button" aria-pressed="false" title="Зменшити рух">
+              <span class="control-button__symbol" aria-hidden="true">◌</span>
+              <span class="control-button__label">Менше руху</span>
+            </button>
+          </div>
+        </header>
+
+        <aside class="safety-note" aria-label="Нагадування про безпеку">
+          <div class="safety-note__icon" aria-hidden="true">✳</div>
+          <p><strong>Спочатку безпека.</strong> Якщо лунає повітряна тривога, прямуйте до укриття та дотримуйтеся офіційних вказівок. Сайт не відстежує загрози.
+          <a href="https://bezpeka.dsns.gov.ua/materials/pravyla-povedinky-pid-chas-povitryanoyi-tryvohy" target="_blank" rel="noopener noreferrer">Поради ДСНС ↗</a></p>
+        </aside>
+
+        <main id="main" class="main-content">
+          <section class="intro" aria-labelledby="page-title">
+            <div class="eyebrow"><span class="eyebrow__light" aria-hidden="true"></span> ПРОСТІР ДЛЯ ОДНІЄЇ ХВИЛИНИ</div>
+            <h1 id="page-title">Коли навколо гучно,<br /><span>знайдіть місце для тиші.</span></h1>
+            <p class="intro__subtitle">Не потрібно вдавати, що все добре. Тут можна ненадовго відкласти важку думку та відчути трохи опори.</p>
+          </section>
+
+          <section class="meditation" aria-label="Хвилинна вправа">
+            <div id="scene" class="scene">
+              <div class="scene__stars" id="stars" aria-hidden="true"></div>
+              <div class="scene__orbit scene__orbit--outer" aria-hidden="true"></div>
+              <div class="scene__orbit scene__orbit--inner" aria-hidden="true"></div>
+              <div class="scene__arc" aria-hidden="true"></div>
+              <div id="light" class="light" aria-hidden="true">
+                <div class="light__aura"></div>
+                <div class="light__middle"></div>
+                <div class="light__core"></div>
+              </div>
+              <div id="thought" class="thought" hidden></div>
+              <p id="scene-caption" class="scene-caption">Навіть маленьке світло залишається світлом.</p>
+            </div>
+
+            <div id="entry-panel" class="ritual-panel">
+              <div class="ritual-panel__top">
+                <span class="step-label">01 / ВІДПУСТІТЬ НА МИТЬ</span>
+                <span class="time-label"><span aria-hidden="true">◷</span> 60 секунд</span>
+              </div>
+              <label class="field-label" for="thought-input">Яка думка зараз займає найбільше місця?</label>
+              <p class="field-hint" id="thought-hint">Напишіть її для себе або залиште поле порожнім. Не потрібно підбирати правильні слова.</p>
+              <textarea id="thought-input" name="thought" rows="2" maxlength="160" aria-describedby="thought-hint" placeholder="Мене турбує…"></textarea>
+              <div class="suggestions" aria-label="Або оберіть близьку думку">
+                <button type="button" class="suggestion" data-thought="Мені страшно">Мені страшно</button>
+                <button type="button" class="suggestion" data-thought="Я дуже втомився від невизначеності">Виснажує невизначеність</button>
+                <button type="button" class="suggestion" data-thought="Складно знайти сили на новий день">Важко знайти сили</button>
+              </div>
+              <button id="start-button" type="button" class="primary-button">Почати хвилину <span aria-hidden="true">↗</span></button>
+              <p class="privacy-line"><span aria-hidden="true">◇</span> Думка залишається лише у вашій вкладці. Ми її нікуди не надсилаємо.</p>
+            </div>
+
+            <div id="session-panel" class="session-panel" hidden>
+              <span class="step-label">02 / МИТЬ ДЛЯ СЕБЕ</span>
+              <h2 id="guidance" class="guidance" aria-live="polite" aria-atomic="true">Нехай ця хвилина буде вашою.</h2>
+              <p class="session-caption">Відчувати страх, втому чи злість у складні часи природно.</p>
+              <div class="session-controls">
+                <div class="timer" aria-label="Час до завершення вправи">
+                  <svg class="timer__ring" viewBox="0 0 48 48" aria-hidden="true">
+                    <circle cx="24" cy="24" r="20" class="timer__track" />
+                    <circle id="timer-progress" cx="24" cy="24" r="20" class="timer__progress" />
+                  </svg>
+                  <span id="time-left" class="timer__text">1:00</span>
+                </div>
+                <button id="pause-button" type="button" class="secondary-button">Призупинити</button>
+                <button id="stop-button" type="button" class="quiet-button">Завершити зараз</button>
+              </div>
+            </div>
+
+            <div id="finish-panel" class="finish-panel" hidden>
+              <span class="step-label">03 / ХВИЛИНА МИНУЛА</span>
+              <h2>Ви пройшли цю хвилину.</h2>
+              <p>Можливо, думка все ще поруч. Це нормально. Не потрібно вирішувати все одразу. Наступний маленький крок може зачекати, доки ви будете готові.</p>
+              <div class="finish-panel__actions">
+                <button id="again-button" class="primary-button" type="button">Ще одна хвилина <span aria-hidden="true">↗</span></button>
+                <button id="new-button" class="secondary-button" type="button">Інша думка</button>
+              </div>
+            </div>
+          </section>
+
+          <p class="bottom-note"><span aria-hidden="true">✦</span> Тут не потрібно бути сильними щосекунди.</p>
+        </main>
+
+        <footer class="site-footer">
+          <div class="site-footer__brand"><span class="mini-star" aria-hidden="true">✳</span> Тихо поруч <span class="site-footer__separator" aria-hidden="true">·</span> Зроблено з турботою про людей в Україні.</div>
+          <div class="site-footer__links">
+            <a href="https://sunmeat.dev/" target="_blank" rel="noopener noreferrer">sunmeat.dev ↗</a>
+            <a href="https://github.com/sunmeat/meditation" target="_blank" rel="noopener noreferrer">Відкритий код ↗</a>
+            <a href="https://www.who.int/publications/i/item/9789240003927/" target="_blank" rel="noopener noreferrer">Про самодопомогу ↗</a>
+          </div>
+          <p class="site-footer__disclaimer">Це невелика вправа для самопідтримки, а не заміна професійної допомоги чи правил безпеки.</p>
+        </footer>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
